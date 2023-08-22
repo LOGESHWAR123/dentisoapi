@@ -1,9 +1,8 @@
 from fastapi import FastAPI, UploadFile, File
-from PIL import Image, ImageDraw, ImageFont  # Import ImageFont
+from PIL import Image, ImageDraw, ImageFont
 import io
 import torch
-import tempfile
-from fastapi.responses import FileResponse
+from fastapi.responses import StreamingResponse
 import os
 
 app = FastAPI()
@@ -36,12 +35,13 @@ async def detect_objects(file: UploadFile = File(...)):
 
         x_min, y_min, x_max, y_max = bounding_box
         draw.rectangle(bounding_box, outline="#7fff00", width=box_width)
-        
+        draw.text((x_min, y_min), f"{label} ({confidence:.2f})", fill="black")
 
-        font = ImageFont.truetype("arial.ttf", font_size)
-        draw.text((x_min, y_min), f"{label} ({confidence:.2f})", fill="black", font=font)
+    image_buffer = io.BytesIO()
+    image_with_boxes.save(image_buffer, format="JPEG")
+    image_buffer.seek(0)  # Reset the buffer pointer to the beginning
 
-    image_save_path = os.path.join(os.path.dirname(__file__), "image_with_boxes.jpg")
-    image_with_boxes.save(image_save_path, format="JPEG")
-
-    return {"object_info": object_info, "image_with_boxes_path": image_save_path}
+    return StreamingResponse(
+        content=image_buffer,
+        media_type="image/jpeg",
+    )
