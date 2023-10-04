@@ -8,7 +8,14 @@ import os
 app = FastAPI()
 
 model = torch.hub.load('ultralytics/yolov5', 'custom', 'best.pt')
+@app.get("/")
+async def root():
+    return "Dentisto Api 2"
 
+
+@app.get("/check")
+async def root():
+    return "Calling Dentisto Api 2 for every 14 min...."
 @app.post("/detect/")
 async def detect_objects(file: UploadFile = File(...)):
     image = Image.open(io.BytesIO(file.file.read()))
